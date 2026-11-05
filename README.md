@@ -3,8 +3,10 @@
 > **Warning:** This project was fully written by an AI agent, has not been fully human-tested, and should be run at your own risk.
 
 
-`pyfig` saves a Matplotlib `Figure` as a Python pickle with the `.pyfig`
-extension, then lets you reopen the editable figure later.
+`pyfig` saves an editable Matplotlib `Figure` in a compact `.pyfig` archive.
+It rebuilds large line drawing caches when you reopen the figure and stores
+repeated numeric arrays only once. Existing `.pyfig` files containing direct
+Figure pickles still open.
 
 Requires Python 3.9 or newer and Matplotlib. Install from this directory:
 
@@ -31,6 +33,18 @@ restored = load_figure(path)
 restored.axes[0].set_title("Still editable")
 ```
 
+The compact format supports standard Matplotlib artists, including lines,
+images, and collections. A custom `Artist` subclass raises
+`UnsupportedFigureError` when saved, so it cannot silently change appearance.
+Compression and cache rebuilding make saving and opening take more work than a
+plain pickle; size savings depend on the plotted data. The archive contains a
+pickle for the figure's layout and style, so it remains tied to compatible
+Matplotlib versions. Saving clears recomputable drawing caches on the source
+figure; its next draw rebuilds them. The format stores the derived arrays
+already present in the figure and does not rerun the analysis script. Custom
+artists, including some third-party and 3D artists, are rejected by the compact
+saver.
+
 To open the saved figure in a Matplotlib window, run any of:
 
 ```sh
@@ -49,10 +63,9 @@ Opening a window requires a working graphical Matplotlib backend. The opener
 uses `plt.show()`, so it waits for the window to close in normal noninteractive
 use. `save_figure` returns the path it wrote and overwrites an existing file.
 
-**Only open `.pyfig` files from sources you trust.** They are pickle files, and
-loading a pickle can execute arbitrary code. Figures containing custom artists
-may also need their original Python modules installed. Pickles work best with
-the same Matplotlib version used to save them.
+**Only open `.pyfig` files from sources you trust.** Both compact archives and
+legacy files contain pickle data, and loading a pickle can execute arbitrary
+code. Figures work best with the same Matplotlib version used to save them.
 
 Run the tests without a display server:
 
